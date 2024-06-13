@@ -1,6 +1,6 @@
-#####################################################
-# ###### SIDNEY C. LOSBANES #########################
-#####################################################
+SCLOSBANES SCRIPT. 
+
+
 
 For Achlinux 
 1.) Clone the Repository: Open a terminal and clone the repository to your local machine using Git. Run the following command:
