@@ -131,6 +131,19 @@ iptables -A INPUT -p tcp --tcp-flags ALL URG,PSH,SYN,FIN -j LOG --log-prefix "St
 iptables -A INPUT -p tcp --tcp-flags ALL SYN,FIN -j LOG --log-prefix "Stealth_Scan:"
 iptables -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j LOG --log-prefix "Stealth_Scan:"
 iptables -A INPUT -p tcp --tcp-flags ALL RST -j LOG --log-prefix "Stealth_Scan:"
+
+# Block invalid packets and log them
+sudo iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j LOG --log-prefix "sidney_Invalid_Packets: "
+sudo iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
+
+# Block new packets that are not SYN and log them
+sudo iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j LOG --log-prefix "sidney_Non_SYN_Packets: "
+sudo iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP
+
+# Block uncommon MSS values and log them
+sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j LOG --log-prefix "sidney_Uncommon_MSS_Values: "
+sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+
 #TO CHECK THIS RULES ABOVE YOU JUST TYPE THIS SAMPLE COMMAND sudo grep "Bogus_TCP_flags" /var/log/syslog
 ##################SIDNEY#MODIFICATION#END##########################################################
 
