@@ -7,7 +7,7 @@ clear
 echo "##############################################"
 echo "#        Arch Linux Firewall Setup           #"
 echo "##############################################"
-echo ""
+echo "Develop by Sclosbanes"
 
 # Display the current network interfaces
 echo "Detecting network interfaces..."
