@@ -143,6 +143,16 @@ sudo iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW 
 # Block uncommon MSS values and log them
 sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j LOG --log-prefix "sidney_Uncommon_MSS_Values: "
 sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
+# SSH brute force protection with Sidney prefix
+iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --set
+iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --update --seconds 60 --hitcount 10 -j LOG --log-prefix "Sidney_SSH_Brute_Force: "
+iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --update --seconds 60 --hitcount 10 -j DROP
+
+# Block port scanning with Sidney prefix
+iptables -N port-scanning
+iptables -A port-scanning -p tcp --tcp-flags SYN,ACK,FIN,RST RST -m limit --limit 1/s --limit-burst 2 -j RETURN
+iptables -A port-scanning -p tcp --tcp-flags SYN,ACK,FIN,RST RST -j LOG --log-prefix "Sidney_Port_Scanning: "
+iptables -A port-scanning -j DROP
 
 #TO CHECK THIS RULES ABOVE YOU JUST TYPE THIS SAMPLE COMMAND sudo grep "Bogus_TCP_flags" /var/log/syslog
 ##################SIDNEY#MODIFICATION#END##########################################################
