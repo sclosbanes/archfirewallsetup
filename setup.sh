@@ -57,14 +57,29 @@ sudo iptables -A OUTPUT -o lo -j ACCEPT
 sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 sudo iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# Allow SSH connections
+# Allow SSH inbound connections
 sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 
 # Allow HTTP, HTTPS, and SSH outbound connections
 sudo iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
 sudo iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
 sudo iptables -A OUTPUT -p tcp --dport 22 -j ACCEPT
+###################################################
+##########-------------START-SCL-------############
+# Prompt the user to enter the IP address to allow traffic from
+echo "Please enter the IP address to allow outbound traffic from:"
+read -r IP_ADDRESS
 
+# Validate the IP address
+if [[ ! $IP_ADDRESS =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Invalid IP address. Please enter a valid IP address."
+    exit 1
+fi
+
+# Allow outbound traffic from the specified IP address
+sudo iptables -A OUTPUT -d 0.0.0.0/0 -s "$IP_ADDRESS" -j ACCEPT
+############-------------SCL-END------##################
+########################################################
 # Allow ping
 sudo iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
 sudo iptables -A OUTPUT -p icmp --icmp-type echo-reply -j ACCEPT
