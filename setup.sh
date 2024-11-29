@@ -99,64 +99,6 @@ sudo iptables -t nat -A POSTROUTING -o "$WAN" -j MASQUERADE
 sudo iptables -A FORWARD -i "$LAN" -o "$WAN" -j ACCEPT
 sudo iptables -A FORWARD -i "$WAN" -o "$LAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
 
-####################SIDNEY#MODIFICATIONS#START##############################################
-# Block packets with Bogus TCP flags
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG NONE -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags FIN,SYN FIN,SYN -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags SYN,RST SYN,RST -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags FIN,RST FIN,RST -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags FIN,ACK FIN -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ACK,URG URG -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ACK,FIN FIN -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ACK,PSH PSH -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL ALL -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL NONE -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL FIN,PSH,URG -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL SYN,FIN,PSH,URG -j LOG --log-prefix "Bogus_TCP_flags:"
-sudo iptables -t mangle -A PREROUTING -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j LOG --log-prefix "Bogus_TCP_flags:"
-
-# Block ping of death
-sudo iptables -A INPUT -p tcp -m connlimit --connlimit-above 66 -j LOG --log-prefix "Ping_of_Death:"
-sudo iptables -A INPUT -p tcp -m conntrack --ctstate NEW -m limit --limit 60/s --limit-burst 20 -j ACCEPT 
-sudo iptables -A INPUT -p tcp -m conntrack --ctstate NEW -j LOG --log-prefix "New_Connection:"
-sudo iptables -t mangle -A PREROUTING -f -j LOG --log-prefix "Fragmented_Packets:"
-sudo iptables -A INPUT -p tcp --tcp-flags RST RST -m limit --limit 2/s --limit-burst 2 -j ACCEPT 
-sudo iptables -A INPUT -p tcp --tcp-flags RST RST -j LOG --log-prefix "RST_Packets:"
-
-# Set IP rules prevent stealth scans and port scans
-iptables -A INPUT -p tcp --tcp-flags ALL ALL -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL FIN -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL NONE -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL URG,PSH,SYN,FIN -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL SYN,FIN -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j LOG --log-prefix "Stealth_Scan:"
-iptables -A INPUT -p tcp --tcp-flags ALL RST -j LOG --log-prefix "Stealth_Scan:"
-
-# Block invalid packets and log them
-sudo iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j LOG --log-prefix "sidney_Invalid_Packets: "
-sudo iptables -t mangle -A PREROUTING -m conntrack --ctstate INVALID -j DROP
-
-# Block new packets that are not SYN and log them
-sudo iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j LOG --log-prefix "sidney_Non_SYN_Packets: "
-sudo iptables -t mangle -A PREROUTING -p tcp ! --syn -m conntrack --ctstate NEW -j DROP
-
-# Block uncommon MSS values and log them
-sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j LOG --log-prefix "sidney_Uncommon_MSS_Values: "
-sudo iptables -t mangle -A PREROUTING -p tcp -m conntrack --ctstate NEW -m tcpmss ! --mss 536:65535 -j DROP
-# SSH brute force protection with Sidney prefix
-iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --set
-iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --update --seconds 60 --hitcount 10 -j LOG --log-prefix "Sidney_SSH_Brute_Force: "
-iptables -A INPUT -p tcp --dport ssh -m conntrack --ctstate NEW -m recent --update --seconds 60 --hitcount 10 -j DROP
-
-# Block port scanning with Sidney prefix
-iptables -N port-scanning
-iptables -A port-scanning -p tcp --tcp-flags SYN,ACK,FIN,RST RST -m limit --limit 1/s --limit-burst 2 -j RETURN
-iptables -A port-scanning -p tcp --tcp-flags SYN,ACK,FIN,RST RST -j LOG --log-prefix "Sidney_Port_Scanning: "
-iptables -A port-scanning -j DROP
-
-#TO CHECK THIS RULES ABOVE YOU JUST TYPE THIS SAMPLE COMMAND sudo grep "Bogus_TCP_flags" /var/log/syslog
-##################SIDNEY#MODIFICATION#END##########################################################
-
 # Display completion message
 clear
 echo "##############################################"
